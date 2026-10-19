@@ -1,0 +1,13 @@
+[package]
+name = "silk"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Smooth video on Windows: AI frame interpolation (RIFE) and per-pixel motion blur"
+license = "MIT"
+repository = "https://github.com/25Dark25/silk"
+
+[dependencies]
+eframe = "0.37.0"
+ort = { version = "2.0.0-rc.14", default-features = false, features = ["std", "download-binaries", "copy-dylibs", "api-31", "directml", "tls-native"] }
+rfd = "0.17.2"
