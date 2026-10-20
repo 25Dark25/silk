@@ -3165,6 +3165,7 @@ dependencies = [
  "eframe",
  "ort",
  "rfd",
+ "ureq",
 ]
 
 [[package]]

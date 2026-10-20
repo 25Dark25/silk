@@ -11,3 +11,4 @@ repository = "https://github.com/25Dark25/silk"
 eframe = "0.37.0"
 ort = { version = "2.0.0-rc.14", default-features = false, features = ["std", "download-binaries", "copy-dylibs", "api-31", "directml", "tls-native"] }
 rfd = "0.17.2"
+ureq = { version = "3.4.2", default-features = false, features = ["native-tls"] }
