@@ -4,11 +4,13 @@ Builds the Windows release package from an existing release build:
     cargo build --locked --release
     powershell -File tools/release/package.ps1 [-Tag v0.1.0]
 
-Writes dist/silk-<version>-windows-x64.zip and dist/SHA256SUMS (LF endings,
-sha256sum format) and prints both hashes. Needs cargo-about (with its "cli"
-feature), 7-Zip and the Visual Studio C++ build tools, which provide the
-Visual C++ runtime DLLs. Every downloaded license file is checked against a
-pinned SHA-256.
+Writes dist/silk-<version>-windows-x64.zip (portable),
+dist/silk-<version>-windows-x64.msi (per-user installer, installer/silk.wxs)
+and dist/SHA256SUMS (LF endings, sha256sum format), and prints the hashes.
+Needs cargo-about (with its "cli" feature), 7-Zip, WiX v7 (the "wix" dotnet
+tool) and the Visual Studio C++ build tools, which provide the Visual C++
+runtime DLLs. Every downloaded license file is checked against a pinned
+SHA-256.
 #>
 param([string]$Tag = "")
 
@@ -87,7 +89,17 @@ Write-Host "Visual C++ runtime $((Get-Item (Join-Path $stage 'vcruntime140.dll')
 
 Push-Location $dist
 Invoke-Native $sevenZip @("a", "-tzip", "-mx=9", "$name.zip", $name) | Out-Null
-$sums = "$(Get-Sha256 "$name.zip")  $name.zip`n"
+
+# The installer, from the same staged files. Accepting WiX's OSMF EULA: its
+# fee only applies to revenue-generating users above US$10,000 a year.
+Invoke-Native "wix" @("build", "-acceptEula", "wix7", "-arch", "x64", "-d", "Version=$version", "-d", "PackageDir=$stage",
+    (Join-Path $root "installer\silk.wxs"), "-o", "$name.msi")
+# ICE91 only warns that per-user files would not reach every profile in a
+# per-machine install; this package is per-user only.
+Invoke-Native "wix" @("msi", "validate", "-acceptEula", "wix7", "-sice", "ICE91", "$name.msi")
+Remove-Item "$name.wixpdb" -ErrorAction SilentlyContinue
+
+$sums = "$(Get-Sha256 "$name.msi")  $name.msi`n$(Get-Sha256 "$name.zip")  $name.zip`n"
 [IO.File]::WriteAllText((Join-Path $dist "SHA256SUMS"), $sums)
 Pop-Location
 Remove-Item -LiteralPath $downloads -Recurse -Force

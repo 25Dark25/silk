@@ -1,8 +1,8 @@
 name: Release build
 
-# Run by hand on a release tag. Builds the Windows package and its SHA256SUMS,
-# prints the hashes in the log and uploads both as an artifact. Signing and
-# publishing are done by the maintainer.
+# Run by hand on a release tag. Builds the portable zip, the MSI installer and
+# their SHA256SUMS, prints the hashes in the log and uploads them as an
+# artifact. Signing and publishing are done by the maintainer.
 on:
   workflow_dispatch:
     inputs:
@@ -29,6 +29,10 @@ jobs:
           toolchain: "1.99.1"
       - name: Install cargo-about
         run: cargo install cargo-about --locked --version 0.9.2 --features cli
+      - name: Install WiX
+        run: |
+          dotnet tool install --global wix --version 7.0.0
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.dotnet\tools"
       - name: Build
         run: cargo build --locked --release
       - name: Package
@@ -38,5 +42,6 @@ jobs:
           name: silk-${{ inputs.tag }}-windows-x64
           path: |
             dist/*.zip
+            dist/*.msi
             dist/SHA256SUMS
           if-no-files-found: error

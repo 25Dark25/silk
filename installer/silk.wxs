@@ -1,0 +1,65 @@
+<!--
+Per-user MSI for Silk (WiX v7), built by tools/release/package.ps1 from the
+staged release folder. Installs to %LOCALAPPDATA%\Programs\Silk without
+elevation, adds a Start menu shortcut (no desktop shortcut) and replaces
+any older version. The UpgradeCode and the component GUIDs must never
+change.
+
+Per-user components keep an HKCU value as their key path and remove their
+folder on uninstall, as Windows Installer requires (ICE38, ICE64).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Silk" Manufacturer="25Dark25" Version="$(Version)" Scope="perUser" Language="1033"
+           UpgradeCode="221AD61A-2B82-4BCD-8029-F93BE56B0F96">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Silk is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/25Dark25/silk" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Silk">
+          <Directory Id="ModelsFolder" Name="models" />
+          <Directory Id="LicensesFolder" Name="licenses" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Main">
+      <Component Id="App" Directory="INSTALLFOLDER" Guid="D3612755-BBA1-4805-8D94-4A1037261BE5">
+        <RegistryValue Root="HKCU" Key="Software\Silk" Name="InstallFolder" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+        <File Source="$(PackageDir)\silk.exe" />
+        <File Source="$(PackageDir)\DirectML.dll" />
+        <File Source="$(PackageDir)\vcruntime140.dll" />
+        <File Source="$(PackageDir)\vcruntime140_1.dll" />
+        <File Source="$(PackageDir)\msvcp140.dll" />
+        <File Source="$(PackageDir)\msvcp140_1.dll" />
+        <File Source="$(PackageDir)\LICENSE" />
+        <File Source="$(PackageDir)\README.md" />
+        <File Source="$(PackageDir)\THIRD-PARTY.txt" />
+        <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+        <RemoveFolder Id="RemoveProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
+      </Component>
+      <Component Id="Model" Directory="ModelsFolder" Guid="8EA00450-B8CD-41FF-B845-B5DCF9B98027">
+        <RegistryValue Root="HKCU" Key="Software\Silk" Name="Model" Type="integer" Value="1" KeyPath="yes" />
+        <File Source="$(PackageDir)\models\rife_v4.25_flow.onnx" />
+        <RemoveFolder Id="RemoveModelsFolder" On="uninstall" />
+      </Component>
+      <Component Id="Licenses" Directory="LicensesFolder" Guid="A1050BD1-4D16-4F11-8CE2-D7E5E354255E">
+        <RegistryValue Root="HKCU" Key="Software\Silk" Name="Licenses" Type="integer" Value="1" KeyPath="yes" />
+        <File Source="$(PackageDir)\licenses\DirectML-LICENSE.txt" />
+        <File Source="$(PackageDir)\licenses\DirectML-ThirdPartyNotices.txt" />
+        <File Source="$(PackageDir)\licenses\ONNX-Runtime-LICENSE.txt" />
+        <File Source="$(PackageDir)\licenses\ONNX-Runtime-ThirdPartyNotices.txt" />
+        <File Source="$(PackageDir)\licenses\RIFE-LICENSE.txt" />
+        <File Source="$(PackageDir)\licenses\Rust-crates.txt" />
+        <RemoveFolder Id="RemoveLicensesFolder" On="uninstall" />
+      </Component>
+      <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder">
+        <RegistryValue Root="HKCU" Key="Software\Silk" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+        <Shortcut Id="SilkShortcut" Name="Silk" Description="Smooth video: AI frame interpolation and motion blur"
+                  Target="[INSTALLFOLDER]silk.exe" WorkingDirectory="INSTALLFOLDER" />
+      </Component>
+    </Feature>
+  </Package>
+</Wix>
