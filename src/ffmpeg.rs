@@ -21,7 +21,8 @@ pub struct Tools {
 
 impl Tools {
     /// Looks next to the executable (and a few parent folders, which covers
-    /// `target/release` during development), then falls back to `PATH`.
+    /// `target/release` during development), then in the folder the user
+    /// picked last time, then on `PATH`.
     pub fn locate() -> Option<Self> {
         if let Ok(exe) = std::env::current_exe() {
             for dir in exe.ancestors().skip(1).take(4) {
@@ -31,6 +32,9 @@ impl Tools {
                     }
                 }
             }
+        }
+        if let Some(tools) = saved_file().and_then(|f| read_saved(&f)).and_then(|dir| Self::in_dir(&dir)) {
+            return Some(tools);
         }
         let on_path = Self { ffmpeg: "ffmpeg".into(), ffprobe: "ffprobe".into() };
         (runs(&on_path.ffmpeg) && runs(&on_path.ffprobe)).then_some(on_path)
@@ -43,6 +47,32 @@ impl Tools {
         };
         (tools.ffmpeg.is_file() && tools.ffprobe.is_file()).then_some(tools)
     }
+
+    /// Remembers the folder of these tools for the next start (see `locate`).
+    pub fn remember(&self) -> std::io::Result<()> {
+        match (saved_file(), self.ffmpeg.parent()) {
+            (Some(file), Some(dir)) => save(&file, dir),
+            _ => Ok(()),
+        }
+    }
+}
+
+/// `%APPDATA%\Silk\ffmpeg-folder.txt`: the folder picked with "Locate ffmpeg.exe…".
+fn saved_file() -> Option<PathBuf> {
+    std::env::var_os("APPDATA").map(|dir| PathBuf::from(dir).join("Silk").join("ffmpeg-folder.txt"))
+}
+
+fn read_saved(file: &Path) -> Option<PathBuf> {
+    let text = std::fs::read_to_string(file).ok()?;
+    let dir = text.trim();
+    (!dir.is_empty()).then(|| PathBuf::from(dir))
+}
+
+fn save(file: &Path, dir: &Path) -> std::io::Result<()> {
+    if let Some(parent) = file.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(file, dir.to_string_lossy().as_bytes())
 }
 
 fn exe_name(base: &str) -> String {
@@ -375,6 +405,19 @@ pub(crate) fn last_lines(text: &str, n: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn remembers_the_ffmpeg_folder() {
+        let dir = std::env::temp_dir().join(format!("silk-saved-{}", std::process::id()));
+        let file = dir.join("Silk").join("ffmpeg-folder.txt");
+        assert_eq!(read_saved(&file), None, "nothing saved yet");
+        let picked = Path::new(r"C:\Program Files\FFmpeg ñ\bin");
+        save(&file, picked).unwrap();
+        assert_eq!(read_saved(&file).as_deref(), Some(picked));
+        std::fs::write(&file, "  \r\n").unwrap();
+        assert_eq!(read_saved(&file), None, "a blank file means nothing saved");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn parses_rationals() {

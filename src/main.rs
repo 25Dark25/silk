@@ -276,6 +276,10 @@ impl SilkApp {
             .pick_file()
         {
             self.tools = file.parent().and_then(Tools::in_dir);
+            if let Some(tools) = &self.tools {
+                // If this fails the user just has to locate FFmpeg again next time.
+                let _ = tools.remember();
+            }
         }
     }
 }
