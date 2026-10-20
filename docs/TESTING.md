@@ -72,6 +72,27 @@ FFmpeg 9.0.2 "essentials" from gyan.dev.
 | 5 | Motion blur, visual | `hud720.mp4` with `SILK_X=2 SILK_BLUR=180`; `fastbox.mp4` with `SILK_X=1 SILK_BLUR=360`; inspect frames 41 and 6 | HUD text, bar and crosshair sharp, background edges blurred along the pan. The fast object leaves translucent trails over the grid; a faint line remains at its original edges (known limit). **Pass** |
 | 6 | Interface language | Run `silk.exe` with and without `SILK_LANG=en` | Spanish on a Spanish Windows (LANGID 0x0C0A), English with `SILK_LANG=en`; all texts fit. **Pass** |
 
+### Release smoke test
+
+Run on the release package before publishing it:
+
+1. Extract `silk-<version>-windows-x64.zip` into an empty folder and copy
+   `ffmpeg.exe` and `ffprobe.exe` into an `ffmpeg\bin\` folder next to
+   `silk.exe`.
+2. Make a 3 s clip with that FFmpeg:
+   `ffmpeg -f lavfi -i "testsrc2=size=3840x720:rate=30" -f lavfi -i "sine=frequency=220" -filter_complex "[0:v]crop=1280:720:x='mod(t*600\,2560)':y=0[v]" -map "[v]" -map 1:a -t 3 -pix_fmt yuv420p -c:v libx264 -crf 16 -c:a aac -shortest clip.mp4`
+3. Run `silk.exe clip.mp4` and press **Process** with the defaults
+   (Interpolation, 2×, AI). Then again with **Both** (2×, 180°).
+4. Check with `ffprobe` that each output has 60 fps, 180 frames, audio and a
+   3 s duration, and with `(Get-Process silk).Modules` that the Visual C++
+   DLLs and `DirectML.dll` are loaded from the package folder.
+
+Latest result, 2026-10-20, package built locally by `tools/release/package.ps1`
+from this version (same machine as above): both outputs have 60 fps, 180
+frames, audio and 3.000 s (7 s and 11 s of processing), and `vcruntime140`,
+`vcruntime140_1`, `msvcp140`, `msvcp140_1` and `DirectML.dll` are loaded from
+the package folder. **Pass**
+
 ### Not tested
 
 - Windows 10, AMD or Intel GPUs, and machines without a GPU (only the CPU path

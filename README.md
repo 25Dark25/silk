@@ -4,7 +4,7 @@ Silky smooth video on Windows. Silk generates in-between frames with an AI
 model (RIFE) and adds per-pixel motion blur in the style of ReelSmart Motion
 Blur, alone or combined. It was made with gameplay footage in mind.
 
-> **Status:** early, no release yet. The code was written almost entirely by an
+> **Status:** early; 0.1.0 is the first release. The code was written almost entirely by an
 > AI assistant (Claude) under the author's direction and has been checked by
 > tests and measurements, not by a human code review or a security audit. It
 > has been run on one machine only (Windows 11, RTX 4060 Laptop GPU). See
@@ -41,23 +41,30 @@ The interface is in English or Spanish, following the Windows display language.
 - A DirectX 12 GPU for the AI method and motion blur. Without one the CPU is
   used, which is far slower.
 - FFmpeg: `ffmpeg.exe` and `ffprobe.exe`, a build that includes `libx264`.
-- To build: Rust 1.95 or later with the MSVC toolchain, and internet access on
-  the first build (the `ort` crate downloads ONNX Runtime and `DirectML.dll`).
+- To build from source: Rust 1.95 or later with the MSVC toolchain, and
+  internet access on the first build (the `ort` crate downloads ONNX Runtime
+  and `DirectML.dll`).
+
+The release package includes everything else, the Visual C++ runtime too.
 
 ## Quick start
 
-1. Clone the repository:
-   ```powershell
-   git clone https://github.com/25Dark25/silk
-   cd silk
-   ```
-2. Download a Windows FFmpeg build (for example the "release essentials" build
-   from gyan.dev) and copy `ffmpeg.exe` and `ffprobe.exe` to `ffmpeg\bin\`.
-3. Build and run:
-   ```powershell
-   cargo build --release
-   .\target\release\silk.exe
-   ```
+1. Download `silk-<version>-windows-x64.zip` from the
+   [releases](https://github.com/25Dark25/silk/releases) and
+   [verify it](#verifying-a-release).
+2. Extract it to a folder of your choice.
+3. Download a Windows FFmpeg build (for example the "release essentials" build
+   from gyan.dev) and copy `ffmpeg.exe` and `ffprobe.exe` to an `ffmpeg\bin\`
+   folder next to `silk.exe`.
+4. Run `silk.exe`.
+
+To build from source instead, clone the repository, put FFmpeg in
+`ffmpeg\bin\` at its root, and run:
+
+```powershell
+cargo build --release
+.\target\release\silk.exe
+```
 
 ## Configuration
 
@@ -101,10 +108,12 @@ The interface is in English or Spanish, following the Windows display language.
   at most three consecutive repeats are treated as dropped frames.
 - **Continuous integration has no GPU.** The GPU paths are tested by hand
   ([docs/TESTING.md](docs/TESTING.md)).
+- **Bundled Visual C++ runtime.** The copy next to `silk.exe` is not updated by
+  Windows Update; it is updated with each Silk release.
 
 ## Verifying a release
 
-There is no release yet. Releases will contain the files, a `SHA256SUMS` file
+Each release contains `silk-<version>-windows-x64.zip`, a `SHA256SUMS` file
 and its detached signature `SHA256SUMS.asc`, made with this key:
 
 ```
@@ -143,6 +152,10 @@ cargo clippy --all-targets --release -- -D warnings
   [docs/TESTING.md](docs/TESTING.md).
 - `tools/model/` rebuilds `models/rife_v4.25_flow.onnx` from the original
   export; the steps are in [docs/TESTING.md](docs/TESTING.md#model).
+- `tools/release/package.ps1` builds the release package from a release
+  build. It needs `cargo install cargo-about --locked --features cli`, 7-Zip
+  and the Visual Studio C++ build tools. The "Release build" workflow runs it
+  on a tag.
 
 ## Third-party components
 
@@ -156,10 +169,15 @@ cargo clippy --all-targets --release -- -D warnings
 - **ONNX Runtime** (MIT), through the [`ort`](https://crates.io/crates/ort)
   crate (MIT or Apache-2.0), and **DirectML** (Microsoft, under its own
   license), both downloaded at build time and not stored in this repository.
+- **The Visual C++ runtime** (Microsoft), copied into the release package as
+  "Distributable Code" under the Visual Studio license terms.
 - **FFmpeg** is not included; its license depends on the build you download
   (builds with `libx264` are GPL).
 - **egui/eframe** and **rfd** (MIT or Apache-2.0). `cargo deny check licenses`
   lists every dependency's license.
+
+The release package carries `THIRD-PARTY.txt` and a `licenses` folder with the
+license texts and notices of everything it contains.
 
 ## Security
 
