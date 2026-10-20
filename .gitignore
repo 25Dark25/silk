@@ -1,3 +1,4 @@
 /target/
 # FFmpeg is downloaded by each user (see README); its executables exceed GitHub's file limit.
 /ffmpeg/
+/dist/

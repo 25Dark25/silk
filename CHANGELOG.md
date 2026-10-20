@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-20
+
 ### Added
 
 - Windows desktop app (egui) that makes videos smoother: drop a video, pick an
@@ -22,3 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`SILK_LANG` overrides it).
 - Scripts in `tools/model/` that rebuild the bundled model from the vs-mlrt
   RIFE v4.25 export.
+- Release package `silk-<version>-windows-x64.zip` with the app, the model,
+  DirectML, the Visual C++ runtime and the third-party licenses, built by the
+  "Release build" workflow.
+
+[Unreleased]: https://github.com/25Dark25/silk/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/25Dark25/silk/releases/tag/v0.1.0

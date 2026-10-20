@@ -14,19 +14,21 @@ In scope:
   file names and paths, and how it handles files dropped on the window.
 - The model build scripts in `tools/model/` and the bundled model's
   provenance.
-- The CI workflow in `.github/`.
+- The release package and how it is built (`tools/release/`), and the CI
+  workflows in `.github/`.
 
 Out of scope (please report them upstream):
 
 - Vulnerabilities in FFmpeg, which parses the input videos, ONNX Runtime,
-  DirectML, GPU drivers, egui or other dependencies. Do tell us if Silk uses
-  one of them in an unsafe way.
+  DirectML, the Visual C++ runtime, GPU drivers, egui or other dependencies.
+  Do tell us if Silk uses one of them in an unsafe way, or if a release ships
+  a vulnerable version of a bundled DLL.
 - Attacks that require replacing files next to `silk.exe` (such as the model
   or the FFmpeg executables) on the user's machine.
 
 ## Supported versions
 
-There is no release yet. Once there is, fixes go into the latest release only.
+Fixes go into the latest release only (currently 0.1.x).
 
 ## Audit status
 
