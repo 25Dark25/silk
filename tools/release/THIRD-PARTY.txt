@@ -1,0 +1,28 @@
+Third-party components in this package
+=====================================
+
+silk.exe
+    Silk itself (MIT, see LICENSE), with ONNX Runtime 1.31.0 linked in
+    (MIT, licenses/ONNX-Runtime-LICENSE.txt and
+    licenses/ONNX-Runtime-ThirdPartyNotices.txt) and the Rust crates listed
+    in licenses/Rust-crates.txt, including the fonts bundled with egui.
+
+DirectML.dll
+    Microsoft DirectML 1.15.4, the official x64 file from the
+    Microsoft.AI.DirectML NuGet package (licenses/DirectML-LICENSE.txt and
+    licenses/DirectML-ThirdPartyNotices.txt).
+
+vcruntime140.dll, vcruntime140_1.dll, msvcp140.dll, msvcp140_1.dll
+    The Microsoft Visual C++ runtime, copied next to silk.exe so that it runs
+    without the Visual C++ Redistributable installed. Microsoft distributes
+    these files as "Distributable Code" under the Visual Studio license
+    terms. Windows Update does not update these copies; Silk releases do.
+
+models\rife_v4.25_flow.onnx
+    RIFE v4.25 by hzwer (Practical-RIFE, MIT, licenses/RIFE-LICENSE.txt), as
+    exported to ONNX by the vs-mlrt project
+    (https://github.com/AmusementClub/vs-mlrt, whose repository is under
+    GPL-3.0; the model files carry no separate license statement), with
+    the changes made by tools/model in Silk's repository.
+
+FFmpeg is not included. Download it separately (see README.md).
