@@ -24,9 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`SILK_LANG` overrides it).
 - Scripts in `tools/model/` that rebuild the bundled model from the vs-mlrt
   RIFE v4.25 export.
-- Release package `silk-<version>-windows-x64.zip` with the app, the model,
-  DirectML, the Visual C++ runtime and the third-party licenses, built by the
-  "Release build" workflow.
+- Release packages built by the "Release build" workflow: a per-user MSI
+  installer (Start menu shortcut, no desktop shortcut, no administrator
+  rights) and a portable zip, both with the app, the model, DirectML, the
+  Visual C++ runtime and the third-party licenses.
+- On startup, a banner when GitHub has a newer release, linking to its page.
+- The folder picked with "Locate ffmpeg.exe…" is remembered.
 
 [Unreleased]: https://github.com/25Dark25/silk/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/25Dark25/silk/releases/tag/v0.1.0

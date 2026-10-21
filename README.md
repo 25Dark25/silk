@@ -45,18 +45,29 @@ The interface is in English or Spanish, following the Windows display language.
   internet access on the first build (the `ort` crate downloads ONNX Runtime
   and `DirectML.dll`).
 
-The release package includes everything else, the Visual C++ runtime too.
+The release packages include everything else, the Visual C++ runtime too.
 
 ## Quick start
 
-1. Download `silk-<version>-windows-x64.zip` from the
-   [releases](https://github.com/25Dark25/silk/releases) and
-   [verify it](#verifying-a-release).
-2. Extract it to a folder of your choice.
-3. Download a Windows FFmpeg build (for example the "release essentials" build
-   from gyan.dev) and copy `ffmpeg.exe` and `ffprobe.exe` to an `ffmpeg\bin\`
-   folder next to `silk.exe`.
-4. Run `silk.exe`.
+Each [release](https://github.com/25Dark25/silk/releases) has an installer and
+a portable zip. [Verify](#verifying-a-release) the one you download.
+
+- **Installer** (`silk-<version>-windows-x64.msi`): installs Silk for your
+  user only, in `%LOCALAPPDATA%\Programs\Silk`, without administrator
+  rights, with a Start menu shortcut and no desktop shortcut. A newer
+  installer replaces the installed version; uninstall it from Settings > Apps.
+- **Portable** (`silk-<version>-windows-x64.zip`): extract it anywhere and run
+  `silk.exe`.
+
+Silk also needs FFmpeg. Download a Windows build (for example the "release
+essentials" build from gyan.dev). With the portable zip you can copy
+`ffmpeg.exe` and `ffprobe.exe` into an `ffmpeg\bin\` folder next to
+`silk.exe`; otherwise press **Locate ffmpeg.exe…** in Silk once, and it
+remembers the folder.
+
+Neither package is code-signed, so Windows SmartScreen may warn about an
+unrecognised app when you open the download; if it does, choose **More info**,
+then **Run anyway**.
 
 To build from source instead, clone the repository, put FFmpeg in
 `ffmpeg\bin\` at its root, and run:
@@ -71,8 +82,15 @@ cargo build --release
 - **Language**: Spanish if the Windows display language is any Spanish
   variant, English otherwise. Set `SILK_LANG=en` or `SILK_LANG=es` to force one.
 - **FFmpeg**: searched next to `silk.exe`, in `ffmpeg\` or `ffmpeg\bin\` beside
-  it or in up to three parent folders, then on `PATH`. If none is found, the
-  window offers a button to locate `ffmpeg.exe`.
+  it or in up to three parent folders, then in the folder picked with
+  **Locate ffmpeg.exe…** (saved in `%APPDATA%\Silk\ffmpeg-folder.txt`), then on
+  `PATH`.
+- **Updates**: when it starts, Silk asks GitHub
+  (`api.github.com/repos/25Dark25/silk/releases/latest`) for the latest
+  release, and if it is newer, shows a banner with a link to its page. Nothing
+  is downloaded or installed automatically. The request reveals your IP
+  address and Silk's version to GitHub; when it fails (offline, for example)
+  nothing is shown.
 - **Model**: `models\rife_v4.25_flow.onnx`, searched the same way.
 - **Output**: next to the input, named after it (for example
   `clip_smooth_120fps_blur.mp4`), never overwriting an existing file.
@@ -110,11 +128,16 @@ cargo build --release
   ([docs/TESTING.md](docs/TESTING.md)).
 - **Bundled Visual C++ runtime.** The copy next to `silk.exe` is not updated by
   Windows Update; it is updated with each Silk release.
+- **Not code-signed.** SmartScreen may warn about the downloaded installer or
+  zip.
+- **Window height.** The window needs about 820 px of height, so it does not
+  fit whole on screens with fewer than about 900 px.
 
 ## Verifying a release
 
-Each release contains `silk-<version>-windows-x64.zip`, a `SHA256SUMS` file
-and its detached signature `SHA256SUMS.asc`, made with this key:
+Each release contains `silk-<version>-windows-x64.msi`,
+`silk-<version>-windows-x64.zip`, a `SHA256SUMS` file and its detached
+signature `SHA256SUMS.asc`, made with this key:
 
 ```
 A7FC EDEA D7E6 C343 7312  284A 442D A687 E0FF 73EE
@@ -152,10 +175,10 @@ cargo clippy --all-targets --release -- -D warnings
   [docs/TESTING.md](docs/TESTING.md).
 - `tools/model/` rebuilds `models/rife_v4.25_flow.onnx` from the original
   export; the steps are in [docs/TESTING.md](docs/TESTING.md#model).
-- `tools/release/package.ps1` builds the release package from a release
-  build. It needs `cargo install cargo-about --locked --features cli`, 7-Zip
-  and the Visual Studio C++ build tools. The "Release build" workflow runs it
-  on a tag.
+- `tools/release/package.ps1` builds the release zip and MSI from a release
+  build. It needs `cargo install cargo-about --locked --features cli`, 7-Zip,
+  WiX v7 (`dotnet tool install --global wix --version 7.0.0`) and the Visual
+  Studio C++ build tools. The "Release build" workflow runs it on a tag.
 
 ## Third-party components
 
@@ -176,8 +199,9 @@ cargo clippy --all-targets --release -- -D warnings
 - **egui/eframe** and **rfd** (MIT or Apache-2.0). `cargo deny check licenses`
   lists every dependency's license.
 
-The release package carries `THIRD-PARTY.txt` and a `licenses` folder with the
-license texts and notices of everything it contains.
+The release packages carry `THIRD-PARTY.txt` and a `licenses` folder with the
+license texts and notices of everything they contain. The installer is built
+with [WiX Toolset](https://github.com/wixtoolset/wix) v7.
 
 ## Security
 

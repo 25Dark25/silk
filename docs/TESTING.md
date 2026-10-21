@@ -2,23 +2,26 @@
 
 ## Automated tests
 
-`cargo test --release` runs 18 tests:
+`cargo test --release` runs 22 tests:
 
 - **Pure logic** (always run): frame-rate parsing, the `minterpolate` filter
   string, RGB plane conversion, duplicate and scene-cut detection, the output
   timeline (doubling, repeated frames, long static runs, cuts), the motion blur
   (static pixels untouched, smear and light conservation, a fast object over a
   still background, a static overlay over a moving one, motion re-anchoring,
-  HUD re-anchoring) and language-code parsing.
+  HUD re-anchoring), language-code parsing, saving and reading the FFmpeg
+  folder, and the update check (a newer release is found; the same, an older
+  or an unexpected tag and error responses are ignored).
 - **Model** (`flow_tracks_motion`): runs RIFE on a synthetic pair and checks the
   meaning of the `flow` output. Uses the GPU, or the CPU when there is none.
 - **End to end** (`end_to_end`): encodes a generated clip with every method and
   effect and checks size, frame rate, duration and audio. **Skipped when FFmpeg
   is not found**, which is the case in CI.
 
-Two more tests are `#[ignore]`d tools for the manual tests below:
-`process_file` (runs the whole pipeline on any file) and `diagnose_pair`
-(interpolates one pair on the GPU and on the CPU).
+Three more tests are `#[ignore]`d: `process_file` (runs the whole pipeline on
+any file) and `diagnose_pair` (interpolates one pair on the GPU and on the
+CPU) are tools for the manual tests below, and `live_github` needs the network
+(it fetches a real "latest release" response over TLS and runs Silk's check).
 
 CI has no GPU and no FFmpeg, so the GPU paths and the end-to-end test are only
 covered by running them locally.
@@ -87,11 +90,46 @@ Run on the release package before publishing it:
    3 s duration, and with `(Get-Process silk).Modules` that the Visual C++
    DLLs and `DirectML.dll` are loaded from the package folder.
 
-Latest result, 2026-10-20, package built locally by `tools/release/package.ps1`
+Latest result, 2026-10-20, zip built locally by `tools/release/package.ps1`
 from this version (same machine as above): both outputs have 60 fps, 180
-frames, audio and 3.000 s (7 s and 11 s of processing), and `vcruntime140`,
-`vcruntime140_1`, `msvcp140`, `msvcp140_1` and `DirectML.dll` are loaded from
-the package folder. **Pass**
+frames, audio and 3.000 s, and `vcruntime140`, `vcruntime140_1`, `msvcp140`,
+`msvcp140_1` and `DirectML.dll` are loaded from the package folder. **Pass**
+
+### Installer test
+
+Run on the MSI before publishing it, as a standard user (no elevation). For the
+upgrade step, build a second MSI from the same files with a higher version,
+outside `dist\`:
+`wix build -acceptEula wix7 -arch x64 -d Version=0.1.1 -d PackageDir=dist\silk-<version>-windows-x64 installer\silk.wxs -o <folder>\silk-upgrade-test-0.1.1.msi`.
+
+1. `msiexec /i silk-<version>-windows-x64.msi /qn`: exit code 0, the files in
+   `%LOCALAPPDATA%\Programs\Silk`, a **Silk** shortcut in the Start menu
+   pointing to `silk.exe` there, no shortcut on the user's or the public
+   desktop.
+2. The [release smoke test](#release-smoke-test) on the installed app, with
+   FFmpeg found through `%APPDATA%\Silk\ffmpeg-folder.txt` (what **Locate
+   ffmpeg.exe…** saves) instead of a copy next to `silk.exe`.
+3. Install the 0.1.1 MSI: the Windows Installer API
+   (`WindowsInstaller.Installer`, `ProductsEx`) lists one Silk, now 0.1.1.
+4. `msiexec /x` it: no product listed, no install folder, no Start menu
+   shortcut and no `HKCU\Software\Silk` left.
+
+Latest result, 2026-10-20, MSI built locally by `package.ps1` from this
+version: install exit 0 with 16 files, the Start menu shortcut and no desktop
+shortcut; the installed app found FFmpeg through the saved folder, and both
+smoke outputs have 60 fps, 180 frames, audio and 3.000 s, with the Visual C++
+DLLs and `DirectML.dll` loaded from `%LOCALAPPDATA%\Programs\Silk`; the
+upgrade left only Silk 0.1.1; the uninstall left nothing of the above.
+**Pass**
+
+### Update banner
+
+The check itself is covered by the tests above. To see the banner, point
+`LATEST` in `src/update.rs` at a repository with a release above Silk's version
+(for example `https://api.github.com/repos/rust-lang/rust/releases/latest`;
+`RELEASE_PAGE` must match it), build, run and revert the change. Last checked
+on 2026-10-20: the banner shows the version, and **Download** opens the release
+page in the browser. **Pass**
 
 ### Not tested
 
@@ -102,6 +140,10 @@ the package folder. **Pass**
 - Long videos (the longest run with this code was the 10 s of test 2).
 - By hand in the interface: Cancel, Open video, Show in folder, dropping a file
   on the window, the file dialogs and the Locate ffmpeg.exe button.
+- The update banner against Silk's own repository (it has no release yet).
+- SmartScreen on a real download, a machine without the Visual C++ runtime
+  installed, an install by an administrator for all users, and screens shorter
+  than about 900 px.
 
 ## Model
 

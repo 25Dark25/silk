@@ -11,11 +11,13 @@ public issue.
 In scope:
 
 - Silk's own code (`src/`), including how it builds FFmpeg command lines from
-  file names and paths, and how it handles files dropped on the window.
+  file names and paths, how it handles files dropped on the window, the update
+  check (an HTTPS request to the GitHub API on startup, whose answer decides the
+  link the banner opens) and the saved FFmpeg folder.
 - The model build scripts in `tools/model/` and the bundled model's
   provenance.
-- The release package and how it is built (`tools/release/`), and the CI
-  workflows in `.github/`.
+- The release packages (the MSI installer and the zip) and how they are built
+  (`tools/release/`, `installer/`), and the CI workflows in `.github/`.
 
 Out of scope (please report them upstream):
 

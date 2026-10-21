@@ -5,8 +5,11 @@ mod i18n;
 mod blur;
 mod ffmpeg;
 mod rife;
+mod update;
 
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc;
 use std::time::Duration;
 
 use eframe::egui::{self, Color32, CornerRadius, RichText, Stroke, vec2};
@@ -23,8 +26,8 @@ fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title(APP_NAME)
-            .with_inner_size([560.0, 770.0])
-            .with_min_inner_size([460.0, 750.0])
+            .with_inner_size([560.0, 820.0])
+            .with_min_inner_size([460.0, 800.0])
             .with_drag_and_drop(true),
         ..Default::default()
     };
@@ -33,7 +36,7 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| {
             setup_style(&cc.egui_ctx);
-            Ok(Box::new(SilkApp::new()))
+            Ok(Box::new(SilkApp::new(&cc.egui_ctx)))
         }),
     )
 }
@@ -104,11 +107,20 @@ struct SilkApp {
     notice: Option<String>,
     /// Whether the RIFE model ships next to the app.
     has_model: bool,
+    /// A newer release, once the startup check has found one.
+    update: Option<update::Update>,
+    update_check: Option<mpsc::Receiver<Option<update::Update>>>,
 }
 
 impl SilkApp {
-    fn new() -> Self {
+    fn new(ctx: &egui::Context) -> Self {
         let has_model = rife::locate_model().is_some();
+        let (tx, update_check) = mpsc::channel();
+        let ctx = ctx.clone();
+        std::thread::spawn(move || {
+            let _ = tx.send(update::check());
+            ctx.request_repaint();
+        });
         let mut app = Self {
             tools: Tools::locate(),
             input: None,
@@ -122,6 +134,8 @@ impl SilkApp {
             status: Status::Idle,
             notice: None,
             has_model,
+            update: None,
+            update_check: Some(update_check),
         };
         // A video dropped onto the executable (or "Open with") arrives as an argument.
         if let Some(path) = std::env::args_os().nth(1) {
@@ -276,6 +290,10 @@ impl SilkApp {
             .pick_file()
         {
             self.tools = file.parent().and_then(Tools::in_dir);
+            if let Some(tools) = &self.tools {
+                // If this fails the user just has to locate FFmpeg again next time.
+                let _ = tools.remember();
+            }
         }
     }
 }
@@ -283,6 +301,10 @@ impl SilkApp {
 impl eframe::App for SilkApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.poll_job();
+        if let Some(found) = self.update_check.as_ref().and_then(|rx| rx.try_recv().ok()) {
+            self.update = found;
+            self.update_check = None;
+        }
         let ctx = ui.ctx().clone();
 
         let dropped = ctx.input(|i| i.raw.dropped_files.first().map(|f| f.path().to_path_buf()));
@@ -303,6 +325,7 @@ impl eframe::App for SilkApp {
                 ))
                 .weak(),
             );
+            self.update_banner(ui);
             ui.add_space(4.0);
 
             self.drop_zone(ui);
@@ -319,6 +342,27 @@ impl eframe::App for SilkApp {
 }
 
 impl SilkApp {
+    fn update_banner(&self, ui: &mut egui::Ui) {
+        let Some(update) = &self.update else { return };
+        egui::Frame::new()
+            .fill(ACCENT.gamma_multiply(0.18))
+            .stroke(Stroke::new(1.0, ACCENT))
+            .corner_radius(8)
+            .inner_margin(10)
+            .show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                ui.horizontal(|ui| {
+                    let text = trf!("Silk {} is available.", "Silk {} está disponible.", update.version);
+                    ui.label(RichText::new(text).strong());
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button(tr("Download", "Descargar")).clicked() {
+                            open(&update.url);
+                        }
+                    });
+                });
+            });
+    }
+
     fn drop_zone(&mut self, ui: &mut egui::Ui) {
         let hovering = ui.ctx().input(|i| !i.raw.hovered_files.is_empty());
         let visuals = ui.visuals().clone();
@@ -653,8 +697,8 @@ fn clock(d: Duration) -> String {
     }
 }
 
-/// Opens the file with the system's default player.
-fn open(path: &Path) {
+/// Opens a file with its default program, or a URL in the default browser.
+fn open(path: impl AsRef<OsStr>) {
     let program = if cfg!(windows) {
         "explorer"
     } else if cfg!(target_os = "macos") {
@@ -662,7 +706,7 @@ fn open(path: &Path) {
     } else {
         "xdg-open"
     };
-    let _ = std::process::Command::new(program).arg(path).spawn();
+    let _ = std::process::Command::new(program).arg(path.as_ref()).spawn();
 }
 
 /// Shows the file selected in the system file manager.
